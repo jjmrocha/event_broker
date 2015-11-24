@@ -14,15 +14,4 @@
 %% limitations under the License.
 %%
 
--record(event_record, {name, date, ref, info}).
-
--define(EVENT(Name, Date, Ref, Info), #event_record{
-		name=Name,
-		date=Date,
-		ref=Ref,
-		info=Info
-		}).
-
--define(NOTIFICATION(Event), {event, Event}).
-
--define(is_event(Name, Event), (is_record(Event, event_record) andalso Name =:= Event#event_record.name)).
+-define(FEED(Feed, Filters, Pid), {Feed, Filters, Pid}).

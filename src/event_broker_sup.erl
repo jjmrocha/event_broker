@@ -25,8 +25,8 @@ start_link() ->
 	supervisor:start_link(?MODULE, []).
 
 init([]) ->
-	EVENT_APP = {event_broker,{event_broker, start_link, []}, permanent, 2000, worker, [event_broker]},
-	BROKER_SUP = {evb_broker_sup, {evb_broker_sup, start_link, []}, permanent, infinity, supervisor, [evb_broker_sup]},
+	EVENT_APP = {event_broker, {worker_pool_sup, start_pool, [event_broker, {event_broker, start_link, []}]}, permanent, 2000, supervisor, [worker_pool_sup]},
+	BROKER_SUP = {eb_feed_sup, {eb_feed_sup, start_link, []}, permanent, 2000, supervisor, [eb_feed_sup]},
 	{ok, {{one_for_one, 5, 60}, [EVENT_APP, BROKER_SUP]}}.
 
 

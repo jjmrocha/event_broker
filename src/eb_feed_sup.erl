@@ -14,24 +14,25 @@
 %% limitations under the License.
 %%
 
--module(evb_broker_sup).
+-module(eb_feed_sup).
 
 -behaviour(supervisor).
 
 -export([init/1]).
--export([start_link/0, start_broker/1]).
+-export([start_link/0, start_feed/0, stop_feed/1]).
 
 -define(SERVER, {local, ?MODULE}).
 
 start_link() ->
 	supervisor:start_link(?SERVER, ?MODULE, []).
 
-start_broker(Broker) ->
-	supervisor:start_child(?MODULE, [Broker]).
+start_feed() ->
+	supervisor:start_child(?MODULE, []).
+
+stop_feed(Pid) ->
+	supervisor:terminate_child(?MODULE, Pid).
 
 init([]) ->
-	process_flag(trap_exit, true),
 	error_logger:info_msg("~p [~p] Starting...\n", [?MODULE, self()]),
-	
-	Broker = {evb_broker, {evb_broker, start_link, []}, temporary, 2000, worker, [evb_broker]},
-	{ok,{{simple_one_for_one, 10, 60}, [Broker]}}.
+	Feed = {eb_feed, {eb_feed, start_link, []}, permanent, 2000, worker, [eb_feed]},
+	{ok,{{simple_one_for_one, 10, 60}, [Feed]}}.

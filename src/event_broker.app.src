@@ -21,13 +21,15 @@
 	]},
 	{registered, [ 
 		event_broker,
-		evb_broker_sup
+		eb_feed_sup
 	]},
 	{applications, [
 		kernel, 
-		stdlib
+		stdlib,
+		worker_pool
 	]},
 	{mod, {event_broker_app, []}},
 	{env, [
+		{feeds, []}
 	]}
 ]}.

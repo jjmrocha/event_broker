@@ -18,15 +18,29 @@
 
 -behaviour(application).
 
+%% ====================================================================
+%% API functions
+%% ====================================================================
 -export([start/2, stop/1]).
 
 start(_Type, _StartArgs) ->
-	case event_broker_sup:start_link() of
-		{ok, Pid} ->
-			{ok, Pid};
-		Error ->
-			Error
-	end.
+	{ok, Pid} = event_broker_sup:start_link(),
+	eb_config:create(),
+	start_feeds(application:get_env(event_broker, feeds, [])),
+	{ok, Pid}.
 
 stop(_State) ->
+	eb_config:drop(),
 	ok.
+
+%% ====================================================================
+%% Internal functions
+%% ====================================================================
+
+start_feeds([]) -> ok;
+start_feeds([{Name, Filters}|T]) when is_binary(Name) andalso is_list(Filters) -> 
+	event_broker:create_feed(Name, Filters),
+	start_feeds(T);
+start_feeds([H|T]) ->
+	error_logger:error_msg("Invalid feed configuration: ~p\n", [H]),
+	start_feeds(T).
