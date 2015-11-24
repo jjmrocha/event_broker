@@ -31,7 +31,7 @@ start_link() ->
 	register(Pid, eb_subscription, []),
 	{ok, Pid}.
 
--spec register(Feed :: binary(), Handler :: atom(), Args :: term()) -> ok | {error, Reason :: term()}.
+-spec register(Feed :: binary(), Handler :: atom() | {Module :: atom(), Id :: term()}, Args :: term()) -> ok | {error, Reason :: term()}.
 register(Feed, Handler, Args) ->
 	case eb_config:feed_server(Feed) of
 		false -> {error, feed_not_found};
@@ -42,7 +42,7 @@ register(Feed, Handler, Args) ->
 			end
 	end.
 
--spec unregister(Feed :: binary(), Handler :: atom()) -> ok | {error, Reason :: term()}.
+-spec unregister(Feed :: binary(), Handler :: atom() | {Module :: atom(), Id :: term()}) -> ok | {error, Reason :: term()}.
 unregister(Feed, Handler) ->
 	case eb_config:feed_server(Feed) of
 		false -> {error, feed_not_found};
