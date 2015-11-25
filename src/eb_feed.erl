@@ -23,7 +23,6 @@
 %% ====================================================================
 -export([start_link/0]).
 -export([register/3, unregister/2]).
--export([subscribe/1, unsubscribe/1]).
 -export([publish/2]).
 
 start_link() ->
@@ -53,23 +52,7 @@ unregister(Feed, Handler) ->
 			end
 	end.	
 
--spec subscribe(Feed :: binary()) -> ok | {error, Reason :: term()}.
-subscribe(Feed) ->
-	case eb_config:feed_server(Feed) of
-		false -> {error, feed_not_found};
-		{ok, Pid} -> 
-			Subscriber = self(),
-			gen_event:call(Pid, eb_subscription, {subscribe, Subscriber})
-	end.	
 
--spec unsubscribe(Feed :: binary()) -> ok | {error, Reason :: term()}.
-unsubscribe(Feed) ->
-	case eb_config:feed_server(Feed) of
-		false -> {error, feed_not_found};
-		{ok, Pid} -> 
-			Subscriber = self(),
-			gen_event:call(Pid, eb_subscription, {unsubscribe, Subscriber})
-	end.
 
 -spec publish(Pid :: pid(), Event :: #event_record{}) -> ok.
 publish(Pid, Event) when is_record(Event, event_record) ->
