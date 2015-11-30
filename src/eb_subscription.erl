@@ -29,7 +29,7 @@
 -export([count/1]).
 
 -spec subscribe(Feed :: binary()) -> ok | {error, Reason :: term()}.
-subscribe(Feed) ->
+subscribe(Feed) when is_binary(Feed) ->
 	case eb_config:feed_server(Feed) of
 		false -> {error, feed_not_found};
 		{ok, Pid} -> 
@@ -38,7 +38,7 @@ subscribe(Feed) ->
 	end.	
 
 -spec unsubscribe(Feed :: binary()) -> ok | {error, Reason :: term()}.
-unsubscribe(Feed) ->
+unsubscribe(Feed) when is_binary(Feed) ->
 	case eb_config:feed_server(Feed) of
 		false -> {error, feed_not_found};
 		{ok, Pid} -> 
