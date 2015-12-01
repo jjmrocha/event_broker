@@ -27,7 +27,7 @@
 
 start_link() ->
 	{ok, Pid} = gen_event:start_link(),
-	register(Pid, eb_subscription, []),
+	gen_event:add_handler(Pid, eb_subscription, []),
 	{ok, Pid}.
 
 -spec register(Feed :: binary(), Handler :: atom() | {Module :: atom(), Id :: term()}, Args :: term()) -> ok | {error, Reason :: term()}.
