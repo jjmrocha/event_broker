@@ -52,8 +52,6 @@ unregister(Feed, Handler) ->
 			end
 	end.	
 
-
-
 -spec publish(Pid :: pid(), Event :: #event_record{}) -> ok.
 publish(Pid, Event) when is_record(Event, event_record) ->
 	gen_event:notify(Pid, Event).
