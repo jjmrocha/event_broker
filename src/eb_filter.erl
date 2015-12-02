@@ -30,15 +30,15 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([subscribe/3, unsubscribe/1]).
+-export([register_filter/3, remove_filter/1]).
 
--spec subscribe(Feed :: binary(), Module :: atom(), Args :: term()) -> ok | {error, Reason :: term()}.
-subscribe(Feed, Module, Args) when is_binary(Feed) andalso is_atom(Module) ->
+-spec register_filter(Feed :: binary(), Module :: atom(), Args :: term()) -> ok | {error, Reason :: term()}.
+register_filter(Feed, Module, Args) when is_binary(Feed) andalso is_atom(Module) ->
 	Subscriber = self(),
 	eb_feed:register(Feed, ?HANDLER(Subscriber), [Feed, Subscriber, Module, Args]).	
 
--spec unsubscribe(Feed :: binary()) -> ok | {error, Reason :: term()}.
-unsubscribe(Feed) ->
+-spec remove_filter(Feed :: binary()) -> ok | {error, Reason :: term()}.
+remove_filter(Feed) ->
 	Subscriber = self(),
 	eb_feed:unregister(Feed, ?HANDLER(Subscriber)).
 
