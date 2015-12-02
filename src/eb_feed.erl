@@ -22,7 +22,7 @@
 %% API functions
 %% ====================================================================
 -export([start_link/0]).
--export([register/3, unregister/2]).
+-export([register/3, unregister/2, list_handlers/1]).
 -export([publish/2]).
 
 start_link() ->
@@ -51,6 +51,15 @@ unregister(Feed, Handler) ->
 				_ -> {error, handler_not_unregistered}
 			end
 	end.	
+
+-spec list_handlers(Feed :: binary()) -> {ok, Handlers :: list()} | {error, Reason :: term()}.
+list_handlers(Feed) ->
+	case eb_config:feed_server(Feed) of
+		false -> {error, feed_not_found};
+		{ok, Pid} -> 
+			Handlers = gen_event:which_handlers(Pid),
+			{ok, lists:delete(eb_subscription, Handlers)}
+	end.
 
 -spec publish(Pid :: pid(), Event :: #event_record{}) -> ok.
 publish(Pid, Event) when is_record(Event, event_record) ->
