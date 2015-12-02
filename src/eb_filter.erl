@@ -19,9 +19,9 @@
 -include("event_broker.hrl").
 
 -define(HANDLER(Pid), {?MODULE, Pid}).
--define(CONFIG(Feed, Pid, Module), {Feed, Pid, Module}).
 
--callback filter(Event :: #event_record{}) -> boolean(). 
+-callback init(Args :: term()) -> {ok, State :: term()} | {error, Reason :: term()}. 
+-callback filter(Event :: #event_record{}, State :: term()) -> {Response :: boolean(), NewState :: term()}. 
 
 -behaviour(gen_event).
 
@@ -30,12 +30,12 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([subscribe/2, unsubscribe/1]).
+-export([subscribe/3, unsubscribe/1]).
 
--spec subscribe(Feed :: binary(), Module :: atom()) -> ok | {error, Reason :: term()}.
-subscribe(Feed, Module) when is_binary(Feed) andalso is_atom(Module) ->
+-spec subscribe(Feed :: binary(), Module :: atom(), Args :: term()) -> ok | {error, Reason :: term()}.
+subscribe(Feed, Module, Args) when is_binary(Feed) andalso is_atom(Module) ->
 	Subscriber = self(),
-	eb_feed:register(Feed, ?HANDLER(Subscriber), ?CONFIG(Feed, Subscriber, Module)).	
+	eb_feed:register(Feed, ?HANDLER(Subscriber), [Feed, Subscriber, Module, Args]).	
 
 -spec unsubscribe(Feed :: binary()) -> ok | {error, Reason :: term()}.
 unsubscribe(Feed) ->
@@ -45,48 +45,60 @@ unsubscribe(Feed) ->
 %% ====================================================================
 %% Behavioural functions
 %% ====================================================================
+-record(state, {feed, pid, monitor, module, data}).
 
 %% init/1
-init([Config = ?CONFIG(_Feed, Subscriber, _Module)]) ->
-	erlang:monitor(process, Subscriber),
-	{ok, Config}.
+init([Feed, Subscriber, Module, Args]) ->
+	case Module:init(Args) of
+		{ok, Data} -> 
+			Ref = erlang:monitor(process, Subscriber),
+			State = #state{feed=Feed,
+					pid=Subscriber,
+					monitor=Ref,
+					module=Module,
+					data=Data},
+			{ok, State};
+		{error, Reason} -> {error, Reason}
+	end.
 
 %% handle_event/2
-handle_event(Event, Config = ?CONFIG(_Feed, Subscriber, Module)) ->
-	try Module:filter(Event) of
-		true -> 
-			Notification = ?NOTIFICATION(Event),
-			Subscriber ! Notification;
-		fale -> ok
+handle_event(Event, State=#state{pid=Subscriber, module=Module, data=Data}) ->
+	{Send, NewData} = try Module:filter(Event, Data)
 	catch Error:Reason -> 
 			LogArgs = [?MODULE, Module, Event, Error, Reason],
-			error_logger:error_msg("~p: Error while executing ~p:filter(~p) -> ~p:~p\n", LogArgs)
+			error_logger:error_msg("~p: Error while executing ~p:filter(~p) -> ~p:~p\n", LogArgs),
+			{false, Data}
 	end,
-	{ok, Config}.
+	send(Send, Subscriber, Event),
+	{ok, State#state{data=NewData}}.
 
 %% handle_call/2
-handle_call(Request, Config) ->
+handle_call(Request, State) ->
 	error_logger:info_msg("~p(~p): Unexpected call message ~p\n", [?MODULE, self(), Request]),
-	{noreply, Config}.
+	{noreply, State}.
 
 %% handle_info/2
-handle_info({'DOWN', _, _, Subscriber, _}, Config = ?CONFIG(Feed, Subscriber, _Module)) ->
+handle_info({'DOWN', _, _, Subscriber, _}, State=#state{feed=Feed, pid=Subscriber}) ->
 	eb_feed:unregister(Feed, ?HANDLER(Subscriber)),
-	{ok, Config};
-handle_info(Info, Config) ->
+	{ok, State};
+handle_info(Info, State) ->
 	error_logger:info_msg("~p(~p): Unexpected message ~p\n", [?MODULE, self(), Info]),
-	{ok, Config}.
+	{ok, State}.
 
 %% terminate/2
-terminate(_Arg, _Config) ->
+terminate(_Arg, #state{monitor=Ref}) ->
+	erlang:demonitor(Ref),
 	ok.
 
 %% code_change/3
-code_change(_OldVsn, Config, _Extra) ->
-	{ok, Config}.
+code_change(_OldVsn, State, _Extra) ->
+	{ok, State}.
 
 %% ====================================================================
 %% Internal functions
 %% ====================================================================
 
-
+send(true, Subscriber, Event) ->
+	Notification = ?NOTIFICATION(Event),
+	Subscriber ! Notification;
+send(false, _Subscriber, _Event) -> ok.
