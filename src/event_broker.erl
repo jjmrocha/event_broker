@@ -27,7 +27,7 @@
 %% API functions
 %% ====================================================================
 -export([start_link/0]).
--export([create_feed/2, drop_feed/1]).
+-export([create_feed/2, drop_feed/1, list_feeds/0]).
 -export([publish/1]).
 
 start_link() ->
@@ -65,6 +65,11 @@ drop_feed(Name) when is_binary(Name) ->
 			eb_config:delete(Name),
 			ok
 	end.
+
+-spec list_feeds() -> list().
+list_feeds() ->
+	Feeds = eb_config:to_list(),
+	lists:map(fun(?FEED(Feed, _Filters, _Pid)) -> Feed end, Feeds).
 
 %% ====================================================================
 %% Behavioural functions
