@@ -27,7 +27,6 @@
 %% API functions
 %% ====================================================================
 -export([start_link/0]).
--export([create_feed/2, drop_feed/1, list_feeds/0]).
 -export([publish/1]).
 
 start_link() ->
@@ -36,40 +35,6 @@ start_link() ->
 -spec publish(Event :: #event_record{}) -> ok.
 publish(Event) when is_record(Event, event_record) ->
 	worker_pool:cast(?MODULE, {publish, Event}).
-
--spec create_feed(Name :: binary(), Filters :: list()) -> ok | {error, Reason :: term()}.
-create_feed(Name, Filters) when is_binary(Name) andalso is_list(Filters) ->
-	case eb_config:find(Name) of
-		false ->
-			case compile_filters(Filters) of
-				{ok, REFilters} ->
-					case eb_feed_sup:start_feed() of
-						{ok, Pid} -> 
-							eb_config:insert(Name, REFilters, Pid),
-							error_logger:info_msg("Feed ~s [~p] is started...\n", [Name, Pid]),
-							ok;
-						_ -> {error, internal_error}
-					end;
-				{error, Reason} ->
-					{error, {invalid_filter, Reason}}
-			end;
-		_ -> {error, feed_already_exists}
-	end.
-
--spec drop_feed(Name :: binary()) -> ok.
-drop_feed(Name) when is_binary(Name) ->
-	case eb_config:find(Name) of
-		false -> ok;
-		{ok, Pid} ->
-			eb_feed_sup:stop_feed(Pid),
-			eb_config:delete(Name),
-			ok
-	end.
-
--spec list_feeds() -> list().
-list_feeds() ->
-	Feeds = eb_config:to_list(),
-	lists:map(fun(?FEED(Feed, _Filters, _Pid)) -> Feed end, Feeds).
 
 %% ====================================================================
 %% Behavioural functions
@@ -107,16 +72,6 @@ code_change(_OldVsn, State, _Extra) ->
 %% ====================================================================
 %% Internal functions
 %% ====================================================================
-
-compile_filters([]) -> {error, empty_filter_list};
-compile_filters(Filters) -> compile_filters(Filters, []).
-
-compile_filters([], ReFilters) -> {ok, ReFilters};
-compile_filters([Filter|T], ReFilters) ->
-	case re:compile(Filter) of
-		{ok, Re} -> compile_filters(T, [Re|ReFilters]);
-		Other -> Other
-	end.
 
 route(Event) ->
 	Feeds = eb_config:foldl(fun(?FEED(_Feed, Filters, Pid), Acc) ->

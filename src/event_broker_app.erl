@@ -39,7 +39,7 @@ stop(_State) ->
 
 start_feeds([]) -> ok;
 start_feeds([{Name, Filters}|T]) when is_binary(Name) andalso is_list(Filters) -> 
-	event_broker:create_feed(Name, Filters),
+	eb_feed_sup:create_feed(Name, Filters),
 	start_feeds(T);
 start_feeds([H|T]) ->
 	error_logger:error_msg("Invalid feed configuration: ~p\n", [H]),

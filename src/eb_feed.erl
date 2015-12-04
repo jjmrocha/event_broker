@@ -21,12 +21,14 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([start_link/0]).
+-export([start_link/2]).
 -export([register/3, unregister/2, list_handlers/1]).
 -export([publish/2]).
 
-start_link() ->
+start_link(Name, REFilters) ->
 	{ok, Pid} = gen_event:start_link(),
+	eb_config:insert(Name, REFilters, Pid),
+	error_logger:info_msg("Feed ~s [~p] is started...\n", [Name, Pid]),
 	gen_event:add_handler(Pid, eb_subscription, []),
 	{ok, Pid}.
 
