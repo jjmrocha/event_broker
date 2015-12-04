@@ -15,3 +15,4 @@
 %%
 
 -define(FEED(Feed, Filters, Pid), {Feed, Filters, Pid}).
+-define(ROUTE(Event, Feeds), {Event, Feeds}).

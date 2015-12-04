@@ -18,7 +18,8 @@
 
 -include("eb_config.hrl").
 
--define(CONFIG_TABLE, event_broker_ets).
+-define(FEED_TABLE, eb_config_feed_ets).
+-define(ROUTING_TABLE, eb_config_routing_ets).
 
 %% ====================================================================
 %% API functions
@@ -27,28 +28,32 @@
 -export([insert/3, delete/1]).
 -export([find/1, to_list/0, feed_server/1]).
 -export([foldl/2]).
+-export([event_routing/1, save_route/2]).
 
 create() ->
-	Options = [set, public, named_table],
-	ets:new(?CONFIG_TABLE, Options).
+	ets:new(?FEED_TABLE, [set, public, named_table]),
+	ets:new(?ROUTING_TABLE, [set, public, named_table, {read_concurrency, true}]).
 
 drop() ->
-	ets:delete(?CONFIG_TABLE).
+	ets:delete(?FEED_TABLE),
+	ets:delete(?ROUTING_TABLE).
 
 insert(Feed, Filters, Pid) when is_atom(Feed) andalso is_list(Filters) andalso is_pid(Pid) ->
-	ets:insert(?CONFIG_TABLE, ?FEED(Feed, Filters, Pid)).
+	ets:insert(?FEED_TABLE, ?FEED(Feed, Filters, Pid)),
+	ets:delete(?ROUTING_TABLE).
 
 delete(Feed) when is_atom(Feed) ->
-	ets:delete(?CONFIG_TABLE, Feed).
+	ets:delete(?FEED_TABLE, Feed),
+	ets:delete(?ROUTING_TABLE).
 
 find(Feed) when is_atom(Feed) ->
-	case ets:lookup(?CONFIG_TABLE, Feed) of
+	case ets:lookup(?FEED_TABLE, Feed) of
 		[] -> false;
 		[FeedRecord] -> {ok, FeedRecord}
 	end.
 
 to_list() ->
-	ets:tab2list(?CONFIG_TABLE).
+	ets:tab2list(?FEED_TABLE).
 
 feed_server(Feed) when is_atom(Feed) ->
 	case find(Feed) of
@@ -59,7 +64,16 @@ feed_server(Feed) when is_atom(Feed) ->
 	end.
 
 foldl(Function, Acc) ->
-	ets:foldl(Function, Acc, ?CONFIG_TABLE).
+	ets:foldl(Function, Acc, ?FEED_TABLE).
+
+event_routing(EventName) when is_binary(EventName) ->
+	case ets:lookup(?ROUTING_TABLE, EventName) of
+		[] -> false;
+		[?ROUTE(_, Feeds)] -> {ok, Feeds}
+	end.	
+
+save_route(EventName, Feeds) when is_binary(EventName) andalso is_list(Feeds) ->
+	ets:insert(?ROUTING_TABLE, ?ROUTE(EventName, Feeds)).
 
 %% ====================================================================
 %% Internal functions
