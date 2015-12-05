@@ -21,9 +21,13 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
+-export([name/2]).
 -export([new/2, new/3, new/4]).
--export([name/1, date/1, ref/1, info/1]).
--export([property/2]).
+-export([get_name/1, get_date/1, get_ref/1, get_info/1]).
+-export([get_property/2]).
+
+name(Namespace, Name) when is_binary(Namespace) andalso is_binary(Name) ->
+	<<Namespace, $:, Name>>.
 
 -spec new(Name::binary(), Ref::term()) -> #event_record{}.
 new(Name, Ref) when is_binary(Name) ->
@@ -38,24 +42,24 @@ new(Name, Date = {{_,_,_}, {_,_,_}}, Ref) when is_binary(Name) ->
 new(Name, Date = {{_,_,_}, {_,_,_}}, Ref, Info) when is_binary(Name) andalso is_map(Info) ->
 	#event_record{name=Name, date=Date, ref=Ref, info=Info}.
 
--spec name(Event::#event_record{}) -> binary().
-name(Event) when is_record(Event, event_record) ->
+-spec get_name(Event::#event_record{}) -> binary().
+get_name(Event) when is_record(Event, event_record) ->
 	Event#event_record.name.
 
--spec date(Event::#event_record{}) -> calendar:datetime().
-date(Event) when is_record(Event, event_record) ->
+-spec get_date(Event::#event_record{}) -> calendar:datetime().
+get_date(Event) when is_record(Event, event_record) ->
 	Event#event_record.date.
 
--spec ref(Event::#event_record{}) -> term().
-ref(Event) when is_record(Event, event_record) ->
+-spec get_ref(Event::#event_record{}) -> term().
+get_ref(Event) when is_record(Event, event_record) ->
 	Event#event_record.ref.
 
--spec info(Event::#event_record{}) -> map().
-info(Event) when is_record(Event, event_record) ->
+-spec get_info(Event::#event_record{}) -> map().
+get_info(Event) when is_record(Event, event_record) ->
 	Event#event_record.info.
 
--spec property(Key::term(), Event::#event_record{}) -> {ok, Value::term()} | error.
-property(Key, Event) when is_record(Event, event_record) ->
+-spec get_property(Key::term(), Event::#event_record{}) -> {ok, Value::term()} | error.
+get_property(Key, Event) when is_record(Event, event_record) ->
 	maps:find(Key, Event#event_record.info).
 
 %% ====================================================================

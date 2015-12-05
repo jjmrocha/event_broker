@@ -38,7 +38,9 @@ create_feed(Name, Filters) when is_binary(Name) andalso is_list(Filters) ->
 	case eb_config:find(Name) of
 		false ->
 			case compile_filters(Filters) of
-				{ok, REFilters} -> supervisor:start_child(?MODULE, [Name, REFilters]);
+				{ok, REFilters} -> 
+					{ok, _} = supervisor:start_child(?MODULE, [Name, REFilters]),
+					send_event(<<"feed_created">>, Name);
 				{error, Reason} -> {error, {invalid_filter, Reason}}
 			end;
 		_ -> {error, feed_already_exists}
@@ -51,6 +53,7 @@ drop_feed(Name) when is_binary(Name) ->
 		{ok, Pid} ->
 			supervisor:terminate_child(?MODULE, Pid),
 			eb_config:delete(Name),
+			send_event(<<"feed_dropped">>, Name),
 			ok
 	end.
 
@@ -81,3 +84,8 @@ compile_filters([Filter|T], ReFilters) ->
 		{ok, Re} -> compile_filters(T, [Re|ReFilters]);
 		Other -> Other
 	end.
+
+send_event(Name, Ref) ->
+	Name = eb_event:name(?EVENT_NAMESPACE, Name),
+	Event = eb_event:new(Name, Ref),
+	event_broker:publish(Event).
