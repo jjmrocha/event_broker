@@ -35,12 +35,12 @@ start_link(Name, REFilters) ->
 -spec register(Feed :: binary(), Handler :: atom() | {Module :: atom(), Id :: term()}, Args :: term()) -> ok | {error, Reason :: term()}.
 register(Feed, Handler, Args) ->
 	case eb_config:feed_server(Feed) of
-		false -> 
+		false -> {error, feed_not_found};
+		{ok, Pid} -> 
 			case gen_event:add_handler(Pid, Handler, Args) of
 				ok -> ok;
 				_ -> {error, handler_not_registered}
-			end;		
-		{ok, _Pid} -> {error, feed_already_exists}
+			end
 	end.
 
 -spec unregister(Feed :: binary(), Handler :: atom() | {Module :: atom(), Id :: term()}) -> ok | {error, Reason :: term()}.

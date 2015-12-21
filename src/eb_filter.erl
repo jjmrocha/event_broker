@@ -37,7 +37,7 @@ register_filter(Feed, Module, Args) when is_binary(Feed) andalso is_atom(Module)
 	Subscriber = self(),
 	eb_feed:register(Feed, ?HANDLER(Module, Subscriber), [Feed, Subscriber, Module, Args]).	
 
--spec remove_filter(Feed :: binary()) -> ok | {error, Reason :: term()}.
+-spec remove_filter(Feed :: binary(), Module :: atom()) -> ok | {error, Reason :: term()}.
 remove_filter(Feed, Module) ->
 	Subscriber = self(),
 	eb_feed:unregister(Feed, ?HANDLER(Module, Subscriber)).
