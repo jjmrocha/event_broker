@@ -33,7 +33,7 @@ start_filter(Feed, Ref) when is_binary(Feed) ->
 
 -spec stop_filter(Feed :: binary()) -> ok | {error, Reason :: term()}.
 stop_filter(Feed) ->
-	eb_filter:remove_filter(Feed).
+	eb_filter:remove_filter(Feed, ?MODULE).
 
 %% ====================================================================
 %% Behavioural functions
