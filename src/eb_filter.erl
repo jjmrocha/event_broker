@@ -18,7 +18,7 @@
 
 -include("event_broker.hrl").
 
--define(HANDLER(Pid), {?MODULE, Pid}).
+-define(HANDLER(Module, Pid), {?MODULE, {Module, Pid}}).
 
 -callback init(Args :: term()) -> {ok, State :: term()} | {error, Reason :: term()}. 
 -callback filter(Event :: #event_record{}, State :: term()) -> {Response :: boolean(), NewState :: term()}. 
@@ -30,17 +30,17 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([register_filter/3, remove_filter/1]).
+-export([register_filter/3, remove_filter/2]).
 
 -spec register_filter(Feed :: binary(), Module :: atom(), Args :: term()) -> ok | {error, Reason :: term()}.
 register_filter(Feed, Module, Args) when is_binary(Feed) andalso is_atom(Module) ->
 	Subscriber = self(),
-	eb_feed:register(Feed, ?HANDLER(Subscriber), [Feed, Subscriber, Module, Args]).	
+	eb_feed:register(Feed, ?HANDLER(Module, Subscriber), [Feed, Subscriber, Module, Args]).	
 
 -spec remove_filter(Feed :: binary()) -> ok | {error, Reason :: term()}.
-remove_filter(Feed) ->
+remove_filter(Feed, Module) ->
 	Subscriber = self(),
-	eb_feed:unregister(Feed, ?HANDLER(Subscriber)).
+	eb_feed:unregister(Feed, ?HANDLER(Module, Subscriber)).
 
 %% ====================================================================
 %% Behavioural functions
@@ -78,8 +78,8 @@ handle_call(Request, State) ->
 	{noreply, State}.
 
 %% handle_info/2
-handle_info({'DOWN', _, _, Subscriber, _}, State=#state{feed=Feed, pid=Subscriber}) ->
-	eb_feed:unregister(Feed, ?HANDLER(Subscriber)),
+handle_info({'DOWN', _, _, Subscriber, _}, State=#state{feed=Feed, pid=Subscriber, module=Module}) ->
+	eb_feed:unregister(Feed, ?HANDLER(Module, Subscriber)),
 	{ok, State};
 handle_info(Info, State) ->
 	error_logger:info_msg("~p(~p): Unexpected message ~p\n", [?MODULE, self(), Info]),
