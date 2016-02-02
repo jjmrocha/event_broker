@@ -28,6 +28,6 @@
 -callback filter(Event :: #event_record{}, State :: term()) -> 
 	{Response :: boolean(), NewState :: term()}. 
 
--callback update(EventList :: list(), State :: term()) 
+-callback update(EventQueue :: queue:queue(), State :: term()) 
 	-> NewState :: term().
 
