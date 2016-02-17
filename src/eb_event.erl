@@ -26,6 +26,9 @@
 -export([get_name/1, get_date/1, get_ref/1, get_info/1]).
 -export([get_property/2]).
 
+name(Namespace, Name) when is_atom(Namespace) andalso is_binary(Name) ->
+	BinNamespace = atom_to_binary(Namespace, utf8),
+	name(BinNamespace, Name);
 name(Namespace, Name) when is_binary(Namespace) andalso is_binary(Name) ->
 	<<Namespace, $:, Name>>.
 
@@ -36,10 +39,10 @@ new(Name, Ref) when is_binary(Name) ->
 
 -spec new(Name::binary(), Date::calendar:datetime(), Ref::term()) -> #event_record{}.
 new(Name, Date = {{_,_,_}, {_,_,_}}, Ref) when is_binary(Name) ->
-	new(Name, Date, Ref, maps:new()).
+	new(Name, Date, Ref, []).
 
--spec new(Name::binary(), Date::calendar:datetime(), Ref::term(), Info::map()) -> #event_record{}.
-new(Name, Date = {{_,_,_}, {_,_,_}}, Ref, Info) when is_binary(Name) andalso is_map(Info) ->
+-spec new(Name::binary(), Date::calendar:datetime(), Ref::term(), Info::list()) -> #event_record{}.
+new(Name, Date = {{_,_,_}, {_,_,_}}, Ref, Info) when is_binary(Name) andalso is_list(Info) ->
 	#event_record{name=Name, date=Date, ref=Ref, info=Info}.
 
 -spec get_name(Event::#event_record{}) -> binary().
@@ -54,13 +57,16 @@ get_date(Event) when is_record(Event, event_record) ->
 get_ref(Event) when is_record(Event, event_record) ->
 	Event#event_record.ref.
 
--spec get_info(Event::#event_record{}) -> map().
+-spec get_info(Event::#event_record{}) -> list().
 get_info(Event) when is_record(Event, event_record) ->
 	Event#event_record.info.
 
 -spec get_property(Key::term(), Event::#event_record{}) -> {ok, Value::term()} | error.
 get_property(Key, Event) when is_record(Event, event_record) ->
-	maps:find(Key, Event#event_record.info).
+	case lists:keyfind(Key, 1, Event#event_record.info) of
+		{_, Value} -> {ok, Value};
+		false -> error
+	end.
 
 %% ====================================================================
 %% Internal functions
