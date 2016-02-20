@@ -27,7 +27,7 @@
 %% API functions
 %% ====================================================================
 -export([start_link/0]).
--export([publish/1]).
+-export([publish/1, publish/2, publish/3]).
 
 start_link() ->
 	gen_server:start_link(?MODULE, [], []).
@@ -35,6 +35,16 @@ start_link() ->
 -spec publish(Event :: #event_record{}) -> ok.
 publish(Event) when is_record(Event, event_record) ->
 	worker_pool:cast(?MODULE, {publish, Event}).
+
+-spec publish(Name::binary(), Ref::term()) -> ok.
+publish(Name, Ref) when is_binary(Name) ->
+	Event = eb_event:new(Name, Ref),
+	publish(Event).
+
+-spec publish(Name::binary(), Ref::term(), Info::list()) -> ok.
+publish(Name, Ref, Info) when is_binary(Name) andalso is_list(Info) ->
+	Event = eb_event:new(Name, Ref, Info),
+	publish(Event).
 
 %% ====================================================================
 %% Behavioural functions
