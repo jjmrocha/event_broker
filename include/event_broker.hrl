@@ -1,5 +1,5 @@
 %%
-%% Copyright 2015 Joaquim Rocha <jrocha@gmailbox.org>
+%% Copyright 2015-16 Joaquim Rocha <jrocha@gmailbox.org>
 %% 
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -26,3 +26,6 @@
 -define(NOTIFICATION(Event), {event, Event}).
 
 -define(is_event(Name, Event), (is_record(Event, event_record) andalso Name =:= Event#event_record.name)).
+
+-define(EB_FEED_CREATED, <<"event_broker:feed_created">>).
+-define(EB_FEED_DROPPED, <<"event_broker:feed_dropped">>).

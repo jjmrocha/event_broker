@@ -1,5 +1,5 @@
 %%
-%% Copyright 2015 Joaquim Rocha <jrocha@gmailbox.org>
+%% Copyright 2015-16 Joaquim Rocha <jrocha@gmailbox.org>
 %% 
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -35,11 +35,12 @@ name(Namespace, Name) when is_binary(Namespace) andalso is_binary(Name) ->
 -spec new(Name::binary(), Ref::term()) -> #event_record{}.
 new(Name, Ref) when is_binary(Name) ->
 	Now = erlang:universaltime(),
-	new(Name, Now, Ref, maps:new()).
+	new(Name, Now, Ref, []).
 
--spec new(Name::binary(), Date::calendar:datetime(), Ref::term()) -> #event_record{}.
-new(Name, Date = {{_,_,_}, {_,_,_}}, Ref) when is_binary(Name) ->
-	new(Name, Date, Ref, []).
+-spec new(Name::binary(), Ref::term(), Info::list()) -> #event_record{}.
+new(Name, Ref, Info) when is_binary(Name) andalso is_list(Info) ->
+	Now = erlang:universaltime(),
+	new(Name, Now, Ref, Info).
 
 -spec new(Name::binary(), Date::calendar:datetime(), Ref::term(), Info::list()) -> #event_record{}.
 new(Name, Date = {{_,_,_}, {_,_,_}}, Ref, Info) when is_binary(Name) andalso is_list(Info) ->
