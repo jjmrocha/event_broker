@@ -26,7 +26,8 @@
 start(_Type, _StartArgs) ->
 	{ok, Pid} = event_broker_sup:start_link(),
 	eb_config:create(),
-	start_feeds(application:get_env(event_broker, feeds, [])),
+	{ok, Feed} = application:get_env(feeds),
+	start_feeds(Feed),
 	{ok, Pid}.
 
 stop(_State) ->

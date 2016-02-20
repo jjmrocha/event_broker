@@ -30,6 +30,7 @@
 	]},
 	{mod, {event_broker_app, []}},
 	{env, [
+		{processes_by_core, 1},
 		{feeds, []}
 	]}
 ]}.
