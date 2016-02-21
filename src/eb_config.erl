@@ -40,11 +40,11 @@ drop() ->
 
 insert(Feed, Filters, Pid) when is_binary(Feed) andalso is_list(Filters) andalso is_pid(Pid) ->
 	ets:insert(?FEED_TABLE, ?FEED(Feed, Filters, Pid)),
-	ets:delete(?ROUTING_TABLE).
+	ets:delete_all_objects(?ROUTING_TABLE).
 
 delete(Feed) when is_binary(Feed) ->
 	ets:delete(?FEED_TABLE, Feed),
-	ets:delete(?ROUTING_TABLE).
+	ets:delete_all_objects(?ROUTING_TABLE).
 
 find(Feed) when is_binary(Feed) ->
 	case ets:lookup(?FEED_TABLE, Feed) of

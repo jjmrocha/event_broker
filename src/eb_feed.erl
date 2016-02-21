@@ -32,24 +32,28 @@ start_link(Name, REFilters) ->
 	gen_event:add_handler(Pid, eb_subscription, []),
 	{ok, Pid}.
 
--spec register(Feed :: binary(), Handler :: atom() | {Module :: atom(), Id :: term()}, Args :: term()) -> ok | {error, Reason :: term()}.
+-spec register(Feed :: binary(), Handler :: gen_event:handler(), Args :: term()) -> ok | {error, Reason :: term()}.
 register(Feed, Handler, Args) ->
 	case eb_config:feed_server(Feed) of
 		false -> {error, feed_not_found};
 		{ok, Pid} -> 
 			case gen_event:add_handler(Pid, Handler, Args) of
-				ok -> ok;
+				ok ->
+					error_logger:info_msg("Handler ~p added to feed ~s with args: ~p\n", [Handler, Feed, Args]),
+					ok;
 				_ -> {error, handler_not_registered}
 			end
 	end.
 
--spec unregister(Feed :: binary(), Handler :: atom() | {Module :: atom(), Id :: term()}) -> ok | {error, Reason :: term()}.
+-spec unregister(Feed :: binary(), Handler :: gen_event:handler()) -> ok | {error, Reason :: term()}.
 unregister(Feed, Handler) ->
 	case eb_config:feed_server(Feed) of
 		false -> {error, feed_not_found};
 		{ok, Pid} -> 
 			case gen_event:delete_handler(Pid, Handler, []) of
-				ok -> ok;
+				ok ->
+					error_logger:info_msg("Handler ~p deleted from feed ~s\n", [Handler, Feed]),
+					ok;
 				_ -> {error, handler_not_unregistered}
 			end
 	end.	
