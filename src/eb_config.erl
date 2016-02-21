@@ -38,15 +38,15 @@ drop() ->
 	ets:delete(?FEED_TABLE),
 	ets:delete(?ROUTING_TABLE).
 
-insert(Feed, Filters, Pid) when is_atom(Feed) andalso is_list(Filters) andalso is_pid(Pid) ->
+insert(Feed, Filters, Pid) when is_binary(Feed) andalso is_list(Filters) andalso is_pid(Pid) ->
 	ets:insert(?FEED_TABLE, ?FEED(Feed, Filters, Pid)),
 	ets:delete(?ROUTING_TABLE).
 
-delete(Feed) when is_atom(Feed) ->
+delete(Feed) when is_binary(Feed) ->
 	ets:delete(?FEED_TABLE, Feed),
 	ets:delete(?ROUTING_TABLE).
 
-find(Feed) when is_atom(Feed) ->
+find(Feed) when is_binary(Feed) ->
 	case ets:lookup(?FEED_TABLE, Feed) of
 		[] -> false;
 		[FeedRecord] -> {ok, FeedRecord}
@@ -55,7 +55,7 @@ find(Feed) when is_atom(Feed) ->
 to_list() ->
 	ets:tab2list(?FEED_TABLE).
 
-feed_server(Feed) when is_atom(Feed) ->
+feed_server(Feed) when is_binary(Feed) ->
 	case find(Feed) of
 		false -> false;
 		{ok, FeedRecord} ->
