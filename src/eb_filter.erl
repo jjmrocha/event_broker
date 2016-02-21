@@ -32,8 +32,8 @@
 %% ====================================================================
 -export([register_filter/3, remove_filter/2]).
 
--spec register_filter(Feed :: binary(), Module :: atom(), Args :: term()) -> ok | {error, Reason :: term()}.
-register_filter(Feed, Module, Args) when is_binary(Feed) andalso is_atom(Module) ->
+-spec register_filter(Feed :: binary(), Module :: atom(), Args :: list()) -> ok | {error, Reason :: term()}.
+register_filter(Feed, Module, Args) when is_binary(Feed) andalso is_atom(Module) andalso is_list(Args) ->
 	Subscriber = self(),
 	eb_feed:register(Feed, ?HANDLER(Module, Subscriber), [Feed, Subscriber, Module, Args]).	
 
@@ -58,7 +58,8 @@ init([Feed, Subscriber, Module, Args]) ->
 					module=Module,
 					data=Data},
 			{ok, State};
-		{error, Reason} -> {error, Reason}
+		{error, Reason} ->
+			{error, Reason}
 	end.
 
 %% handle_event/2

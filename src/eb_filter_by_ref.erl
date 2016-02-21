@@ -1,5 +1,5 @@
 %%
-%% Copyright 2015 Joaquim Rocha <jrocha@gmailbox.org>
+%% Copyright 2015-16 Joaquim Rocha <jrocha@gmailbox.org>
 %% 
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@
 
 -spec start_filter(Feed :: binary(), Ref :: term()) -> ok | {error, Reason :: term()}.
 start_filter(Feed, Ref) when is_binary(Feed) ->
-	eb_filter:register_filter(Feed, ?MODULE, Ref).	
+	eb_filter:register_filter(Feed, ?MODULE, [Ref]).	
 
 -spec stop_filter(Feed :: binary()) -> ok | {error, Reason :: term()}.
 stop_filter(Feed) ->

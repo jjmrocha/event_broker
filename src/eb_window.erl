@@ -42,7 +42,7 @@ start_time_window(Feed, Module, Args, WindowSize, UpdateInterval) when is_binary
 		andalso WindowSize > 0 
 		andalso UpdateInterval > 0 ->
 	Ref = make_ref(),
-	case eb_feed:register(Feed, ?HANDLER(Ref), [Module, Args, time, WindowSize, UpdateInterval]) of
+	case eb_feed:register(Feed, ?HANDLER(Ref), [Ref, Module, Args, time, WindowSize, UpdateInterval]) of
 		ok -> {ok, Ref};
 		Other -> Other
 	end.
@@ -60,7 +60,7 @@ start_length_window(Feed, Module, Args, WindowSize, UpdateInterval) when is_bina
 		andalso WindowSize > 0 
 		andalso UpdateInterval > 0 ->
 	Ref = make_ref(),
-	case eb_feed:register(Feed, ?HANDLER(Ref), [Module, Args, length, WindowSize, UpdateInterval]) of
+	case eb_feed:register(Feed, ?HANDLER(Ref), [Ref, Module, Args, length, WindowSize, UpdateInterval]) of
 		ok -> {ok, Ref};
 		Other -> Other
 	end.
@@ -75,7 +75,7 @@ stop_window(Feed, Ref) when is_binary(Feed) ->
 -record(state, {module, type, size, timer, data, queue}).
 
 %% init/1
-init([Module, Args, Type, WindowSize, UpdateInterval]) ->
+init([Ref, Module, Args, Type, WindowSize, UpdateInterval]) ->
 	case Module:init(Args) of
 		{ok, Data} ->
 			{ok, Timer} = timer:send_interval(UpdateInterval * 1000, {run_update}),

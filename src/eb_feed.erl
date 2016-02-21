@@ -1,5 +1,5 @@
 %%
-%% Copyright 2015 Joaquim Rocha <jrocha@gmailbox.org>
+%% Copyright 2015-16 Joaquim Rocha <jrocha@gmailbox.org>
 %% 
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -67,9 +67,14 @@ list_handlers(Feed) ->
 			{ok, lists:delete(eb_subscription, Handlers)}
 	end.
 
--spec publish(Pid :: pid(), Event :: #event_record{}) -> ok.
-publish(Pid, Event) when is_record(Event, event_record) ->
-	gen_event:notify(Pid, Event).
+-spec publish(Feed :: pid() | binary(), Event :: #event_record{}) -> ok | {error, Reason :: term()}.
+publish(Pid, Event) when is_pid(Pid) andalso is_record(Event, event_record) ->
+	gen_event:notify(Pid, Event);
+publish(Feed, Event) when is_binary(Feed) andalso is_record(Event, event_record) ->
+	case eb_config:feed_server(Feed) of
+		false -> {error, feed_not_found};
+		{ok, Pid} -> publish(Pid, Event)
+	end.	
 
 %% ====================================================================
 %% Internal functions
