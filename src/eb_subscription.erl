@@ -18,9 +18,9 @@
 
 -include("event_broker.hrl").
 
--behaviour(gen_event).
+-behaviour(eb_event_handler).
 
--export([init/1, handle_event/2, handle_call/2, handle_info/2, terminate/2, code_change/3]).
+-export([init/1, handle_event/2, handle_call/2, handle_info/2, terminate/1]).
 
 %% ====================================================================
 %% API functions
@@ -28,30 +28,19 @@
 -export([subscribe/1, unsubscribe/1]).
 -export([count/1]).
 
--spec subscribe(Feed :: binary()) -> ok | {error, Reason :: term()}.
-subscribe(Feed) when is_binary(Feed) ->
-	case eb_config:feed_server(Feed) of
-		false -> {error, feed_not_found};
-		{ok, Pid} -> 
-			Subscriber = self(),
-			gen_event:call(Pid, ?MODULE, {subscribe, Subscriber})
-	end.	
+-spec subscribe(Feed :: atom()) -> ok | {error, Reason :: term()}.
+subscribe(Feed) when is_atom(Feed) ->
+	Subscriber = self(),
+	eb_feed:call(Feed, ?MODULE, {subscribe, Subscriber}).	
 
--spec unsubscribe(Feed :: binary()) -> ok | {error, Reason :: term()}.
-unsubscribe(Feed) when is_binary(Feed) ->
-	case eb_config:feed_server(Feed) of
-		false -> {error, feed_not_found};
-		{ok, Pid} -> 
-			Subscriber = self(),
-			gen_event:call(Pid, ?MODULE, {unsubscribe, Subscriber})
-	end.
+-spec unsubscribe(Feed :: atom()) -> ok | {error, Reason :: term()}.
+unsubscribe(Feed) when is_atom(Feed) ->
+	Subscriber = self(),
+	eb_feed:call(Feed, ?MODULE, {unsubscribe, Subscriber}).
 
--spec count(Feed :: binary()) -> {ok, Count :: integer()} | {error, Reason :: term()}.
-count(Feed) when is_binary(Feed) ->
-	case eb_config:feed_server(Feed) of
-		false -> {error, feed_not_found};
-		{ok, Pid} -> gen_event:call(Pid, ?MODULE, {count})
-	end.
+-spec count(Feed :: atom()) -> {ok, Count :: integer()} | {error, Reason :: term()}.
+count(Feed) when is_atom(Feed) ->
+	eb_feed:call(Feed, ?MODULE, {count}).
 
 %% ====================================================================
 %% Behavioural functions
@@ -102,15 +91,11 @@ handle_info(Info, Dict) ->
 	{ok, Dict}.
 
 %% terminate/2
-terminate(_Arg, Dict) ->
+terminate(Dict) ->
 	lists:foreach(fun({_, Ref}) -> 
 				erlang:demonitor(Ref) 
 		end, 
 		dict:to_list(Dict)).
-
-%% code_change/3
-code_change(_OldVsn, Dict, _Extra) ->
-	{ok, Dict}.
 
 %% ====================================================================
 %% Internal functions

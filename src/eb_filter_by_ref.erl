@@ -18,7 +18,7 @@
 
 -include("event_broker.hrl").
 
--behaviour(eb_filter).
+-behaviour(eb_filter_handler).
 
 -export([init/1, filter/2]).
 
@@ -27,12 +27,12 @@
 %% ====================================================================
 -export([start_filter/2, stop_filter/1]).
 
--spec start_filter(Feed :: binary(), Ref :: term()) -> ok | {error, Reason :: term()}.
-start_filter(Feed, Ref) when is_binary(Feed) ->
+-spec start_filter(Feed :: atom(), Ref :: term()) -> ok | {error, Reason :: term()}.
+start_filter(Feed, Ref) when is_atom(Feed) ->
 	eb_filter:register_filter(Feed, ?MODULE, [Ref]).	
 
--spec stop_filter(Feed :: binary()) -> ok | {error, Reason :: term()}.
-stop_filter(Feed) ->
+-spec stop_filter(Feed :: atom()) -> ok | {error, Reason :: term()}.
+stop_filter(Feed) when is_atom(Feed) ->
 	eb_filter:remove_filter(Feed, ?MODULE).
 
 %% ====================================================================

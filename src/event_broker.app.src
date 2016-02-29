@@ -1,5 +1,5 @@
 %%
-%% Copyright 2015 Joaquim Rocha <jrocha@gmailbox.org>
+%% Copyright 2015-16 Joaquim Rocha <jrocha@gmailbox.org>
 %% 
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -21,7 +21,8 @@
 	]},
 	{registered, [ 
 		event_broker,
-		eb_feed_sup
+		eb_feed_sup,
+		eb_handler_sup
 	]},
 	{applications, [
 		kernel, 

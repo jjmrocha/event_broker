@@ -1,5 +1,5 @@
 %%
-%% Copyright 2015 Joaquim Rocha <jrocha@gmailbox.org>
+%% Copyright 2016 Joaquim Rocha
 %% 
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -14,34 +14,38 @@
 %% limitations under the License.
 %%
 
--module(event_broker_app).
+-module(eb_handler_sup).
 
--behaviour(application).
+-behaviour(supervisor).
+
+-export([init/1]).
 
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([start/2, stop/1]).
+-export([start_link/0]).
+-export([create_handler/3, drop_handler/1]).
 
-start(_Type, _StartArgs) ->
-	{ok, Pid} = event_broker_sup:start_link(),
-	eb_config:create(),
-	{ok, Feed} = application:get_env(feeds),
-	start_feeds(Feed),
-	{ok, Pid}.
+-define(SERVER, {local, ?MODULE}).
 
-stop(_State) ->
-	eb_config:drop(),
-	ok.
+start_link() ->
+	supervisor:start_link(?SERVER, ?MODULE, []).
+
+create_handler(Feed, Handler, Args) ->
+	supervisor:start_child(?MODULE, [Feed, Handler, Args]).
+
+drop_handler(Pid) ->
+	supervisor:terminate_child(?MODULE, Pid).
+
+%% ====================================================================
+%% Behavioural functions
+%% ====================================================================
+
+init([]) ->
+	error_logger:info_msg("~p [~p] Starting...\n", [?MODULE, self()]),
+	Handler = {eb_handler, {eb_handler, start_link, []}, permanent, 2000, worker, [eb_handler]},
+	{ok,{{simple_one_for_one, 10, 60}, [Handler]}}.
 
 %% ====================================================================
 %% Internal functions
 %% ====================================================================
-
-start_feeds([]) -> ok;
-start_feeds([{Name, Filters}|T]) when is_atom(Name) andalso is_list(Filters) -> 
-	eb_feed_sup:create_feed(Name, Filters),
-	start_feeds(T);
-start_feeds([H|T]) ->
-	error_logger:error_msg("Invalid feed configuration: ~p\n", [H]),
-	start_feeds(T).

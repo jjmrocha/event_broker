@@ -1,5 +1,5 @@
 %%
-%% Copyright 2015 Joaquim Rocha <jrocha@gmailbox.org>
+%% Copyright 2015-16 Joaquim Rocha <jrocha@gmailbox.org>
 %% 
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -25,9 +25,9 @@
 %% API functions
 %% ====================================================================
 -export([create/0, drop/0]).
--export([insert/3, delete/1]).
--export([find/1, to_list/0, feed_server/1]).
--export([foldl/2]).
+-export([insert_feed/2, delete_feed/1]).
+-export([find_feed/1, list_feeds/0]).
+-export([foldl_feeds/2]).
 -export([event_routing/1, save_route/2]).
 
 create() ->
@@ -38,32 +38,24 @@ drop() ->
 	ets:delete(?FEED_TABLE),
 	ets:delete(?ROUTING_TABLE).
 
-insert(Feed, Filters, Pid) when is_binary(Feed) andalso is_list(Filters) andalso is_pid(Pid) ->
-	ets:insert(?FEED_TABLE, ?FEED(Feed, Filters, Pid)),
+insert_feed(Feed, Filters) when is_atom(Feed) andalso is_list(Filters) ->
+	ets:insert(?FEED_TABLE, ?FEED(Feed, Filters)),
 	ets:delete_all_objects(?ROUTING_TABLE).
 
-delete(Feed) when is_binary(Feed) ->
+delete_feed(Feed) when is_atom(Feed) ->
 	ets:delete(?FEED_TABLE, Feed),
 	ets:delete_all_objects(?ROUTING_TABLE).
 
-find(Feed) when is_binary(Feed) ->
+find_feed(Feed) when is_atom(Feed) ->
 	case ets:lookup(?FEED_TABLE, Feed) of
 		[] -> false;
 		[FeedRecord] -> {ok, FeedRecord}
 	end.
 
-to_list() ->
+list_feeds() ->
 	ets:tab2list(?FEED_TABLE).
 
-feed_server(Feed) when is_binary(Feed) ->
-	case find(Feed) of
-		false -> false;
-		{ok, FeedRecord} ->
-			?FEED(_Feed, _Filters, Pid) = FeedRecord,
-			{ok, Pid}
-	end.
-
-foldl(Function, Acc) ->
+foldl_feeds(Function, Acc) ->
 	ets:foldl(Function, Acc, ?FEED_TABLE).
 
 event_routing(EventName) when is_binary(EventName) ->

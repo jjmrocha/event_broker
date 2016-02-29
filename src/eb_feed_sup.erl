@@ -1,5 +1,5 @@
 %%
-%% Copyright 2015 Joaquim Rocha
+%% Copyright 2015-16 Joaquim Rocha
 %% 
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -34,34 +34,37 @@
 start_link() ->
 	supervisor:start_link(?SERVER, ?MODULE, []).
 
--spec create_feed(Name :: binary(), Filters :: list()) -> ok | {error, Reason :: term()}.
-create_feed(Name, Filters) when is_binary(Name) andalso is_list(Filters) ->
-	case eb_config:find(Name) of
+-spec create_feed(Name :: atom(), Filters :: list()) -> ok | {error, Reason :: term()}.
+create_feed(Name, Filters) when is_atom(Name) andalso is_list(Filters) ->
+	case eb_config:find_feed(Name) of
 		false ->
 			case compile_filters(Filters) of
 				{ok, REFilters} -> 
-					{ok, _} = supervisor:start_child(?MODULE, [Name, REFilters]),
+					{ok, _} = supervisor:start_child(?MODULE, [Name]),
+					ok = eb_feed:register(Name, eb_subscription, []),
+					eb_config:insert_feed(Name, REFilters),
 					event_broker:publish(?EB_FEED_CREATED, Name);
 				{error, Reason} -> {error, {invalid_filter, Reason}}
 			end;
 		_ -> {error, feed_already_exists}
 	end.
 
--spec drop_feed(Name :: binary()) -> ok.
-drop_feed(Name) when is_binary(Name) ->
-	case eb_config:find(Name) of
+-spec drop_feed(Name :: atom()) -> ok.
+drop_feed(Name) when is_atom(Name) ->
+	case eb_config:find_feed(Name) of
 		false -> ok;
-		{ok, Pid} ->
+		{ok, _} ->
+			Pid = whereis(Name),
 			supervisor:terminate_child(?MODULE, Pid),
-			eb_config:delete(Name),
+			eb_config:delete_feed(Name),
 			event_broker:publish(?EB_FEED_DROPPED, Name),
 			ok
 	end.
 
 -spec list_feeds() -> list().
 list_feeds() ->
-	Feeds = eb_config:to_list(),
-	lists:map(fun(?FEED(Feed, _Filters, _Pid)) -> Feed end, Feeds).
+	Feeds = eb_config:list_feeds(),
+	lists:map(fun(?FEED(Feed, _Filters)) -> Feed end, Feeds).
 
 %% ====================================================================
 %% Behavioural functions

@@ -1,5 +1,5 @@
 %%
-%% Copyright 2015 Joaquim Rocha <jrocha@gmailbox.org>
+%% Copyright 2016 Joaquim Rocha <jrocha@gmailbox.org>
 %% 
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
 %% limitations under the License.
 %%
 
--module(eb_window_handler).
+-module(eb_filter_handler).
 
 -include("event_broker.hrl").
 
@@ -22,12 +22,6 @@
 %% API functions
 %% ====================================================================
 
--callback init(Args :: list()) -> 
-	{ok, State :: term()} | {error, Reason :: term()}. 
-
--callback filter(Event :: #event_record{}, State :: term()) -> 
-	{Response :: boolean(), NewState :: term()}. 
-
--callback update(EventQueue :: queue:queue(), State :: term()) 
-	-> NewState :: term().
+-callback init(Args :: list()) -> {ok, State :: term()} | {error, Reason :: term()}. 
+-callback filter(Event :: #event_record{}, State :: term()) -> {Response :: boolean(), NewState :: term()}. 
 

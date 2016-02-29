@@ -85,17 +85,17 @@ code_change(_OldVsn, State, _Extra) ->
 
 route(Event) ->
 	Feeds = find_feeds(Event#event_record.name),
-	lists:foreach(fun(Pid) -> 
-				eb_feed:publish(Pid, Event) 
+	lists:foreach(fun(Feed) -> 
+				eb_feed:publish(Feed, Event) 
 		end, Feeds).
 
 find_feeds(EventName) ->
 	case eb_config:event_routing(EventName) of
 		false ->
-			Feeds = eb_config:foldl(fun(?FEED(_Feed, Filters, Pid), Acc) ->
+			Feeds = eb_config:foldl_feeds(fun(?FEED(Feed, Filters), Acc) ->
 							case matches(EventName, Filters) of
 								false -> Acc;
-								true -> [Pid|Acc]
+								true -> [Feed|Acc]
 							end
 					end,[]),
 			eb_config:save_route(EventName, Feeds),

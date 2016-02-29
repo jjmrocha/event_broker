@@ -20,25 +20,22 @@
 
 -define(HANDLER(Module, Pid), {?MODULE, {Module, Pid}}).
 
--callback init(Args :: term()) -> {ok, State :: term()} | {error, Reason :: term()}. 
--callback filter(Event :: #event_record{}, State :: term()) -> {Response :: boolean(), NewState :: term()}. 
+-behaviour(eb_event_handler).
 
--behaviour(gen_event).
-
--export([init/1, handle_event/2, handle_call/2, handle_info/2, terminate/2, code_change/3]).
+-export([init/1, handle_event/2, handle_call/2, handle_info/2, terminate/1]).
 
 %% ====================================================================
 %% API functions
 %% ====================================================================
 -export([register_filter/3, remove_filter/2]).
 
--spec register_filter(Feed :: binary(), Module :: atom(), Args :: list()) -> ok | {error, Reason :: term()}.
-register_filter(Feed, Module, Args) when is_binary(Feed) andalso is_atom(Module) andalso is_list(Args) ->
+-spec register_filter(Feed :: atom(), Module :: atom(), Args :: list()) -> ok | {error, Reason :: term()}.
+register_filter(Feed, Module, Args) when is_atom(Feed) andalso is_atom(Module) andalso is_list(Args) ->
 	Subscriber = self(),
 	eb_feed:register(Feed, ?HANDLER(Module, Subscriber), [Feed, Subscriber, Module, Args]).	
 
--spec remove_filter(Feed :: binary(), Module :: atom()) -> ok | {error, Reason :: term()}.
-remove_filter(Feed, Module) ->
+-spec remove_filter(Feed :: atom(), Module :: atom()) -> ok | {error, Reason :: term()}.
+remove_filter(Feed, Module) when is_atom(Feed) andalso is_atom(Module) ->
 	Subscriber = self(),
 	eb_feed:unregister(Feed, ?HANDLER(Module, Subscriber)).
 
@@ -76,7 +73,7 @@ handle_event(Event, State=#state{pid=Subscriber, module=Module, data=Data}) ->
 %% handle_call/2
 handle_call(Request, State) ->
 	error_logger:info_msg("~p(~p): Unexpected call message ~p\n", [?MODULE, self(), Request]),
-	{noreply, State}.
+	{ok, State}.
 
 %% handle_info/2
 handle_info({'DOWN', _, _, Subscriber, _}, State=#state{feed=Feed, pid=Subscriber, module=Module}) ->
@@ -84,16 +81,12 @@ handle_info({'DOWN', _, _, Subscriber, _}, State=#state{feed=Feed, pid=Subscribe
 	{ok, State};
 handle_info(Info, State) ->
 	error_logger:info_msg("~p(~p): Unexpected message ~p\n", [?MODULE, self(), Info]),
-	{ok, State}.
+	{noreply, State}.
 
 %% terminate/2
-terminate(_Arg, #state{monitor=Ref}) ->
+terminate(#state{monitor=Ref}) ->
 	erlang:demonitor(Ref),
 	ok.
-
-%% code_change/3
-code_change(_OldVsn, State, _Extra) ->
-	{ok, State}.
 
 %% ====================================================================
 %% Internal functions

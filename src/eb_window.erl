@@ -18,11 +18,11 @@
 
 -include("event_broker.hrl").
 
--behaviour(gen_event).
+-behaviour(eb_event_handler).
 
 -define(HANDLER(Ref), {?MODULE, Ref}).
 
--export([init/1, handle_event/2, handle_call/2, handle_info/2, terminate/2, code_change/3]).
+-export([init/1, handle_event/2, handle_call/2, handle_info/2, terminate/1]).
 
 %% ====================================================================
 %% API functions
@@ -30,43 +30,43 @@
 -export([start_time_window/5, start_length_window/5, stop_window/2]).
 
 -spec start_time_window(Feed, Module, Args, WindowSize, UpdateInterval) -> Result when
-	Feed :: binary(), 
+	Feed :: atom(), 
 	Module :: atom(), 
 	Args :: term(), 
 	WindowSize :: integer(), 
 	UpdateInterval :: integer,
 	Result :: {ok, Ref :: term()} 
 	| {error, Reason :: term()}.
-start_time_window(Feed, Module, Args, WindowSize, UpdateInterval) when is_binary(Feed) 
+start_time_window(Feed, Module, Args, WindowSize, UpdateInterval) when is_atom(Feed) 
 		andalso is_atom(Module) 
 		andalso WindowSize > 0 
 		andalso UpdateInterval > 0 ->
 	Ref = make_ref(),
-	case eb_feed:register(Feed, ?HANDLER(Ref), [Ref, Module, Args, time, WindowSize, UpdateInterval]) of
+	case eb_feed:register(Feed, ?HANDLER(Ref), [Module, Args, time, WindowSize, UpdateInterval]) of
 		ok -> {ok, Ref};
 		Other -> Other
 	end.
 
 -spec start_length_window(Feed, Module, Args, WindowSize, UpdateInterval) -> Result when
-	Feed :: binary(), 
+	Feed :: atom(), 
 	Module :: atom(), 
-	Args :: term(), 
+	Args :: list(), 
 	WindowSize :: integer(), 
 	UpdateInterval :: integer,
 	Result :: {ok, Ref :: term()} 
 	| {error, Reason :: term()}.
-start_length_window(Feed, Module, Args, WindowSize, UpdateInterval) when is_binary(Feed) 
+start_length_window(Feed, Module, Args, WindowSize, UpdateInterval) when is_atom(Feed) 
 		andalso is_atom(Module) 
 		andalso WindowSize > 0 
 		andalso UpdateInterval > 0 ->
 	Ref = make_ref(),
-	case eb_feed:register(Feed, ?HANDLER(Ref), [Ref, Module, Args, length, WindowSize, UpdateInterval]) of
+	case eb_feed:register(Feed, ?HANDLER(Ref), [Module, Args, length, WindowSize, UpdateInterval]) of
 		ok -> {ok, Ref};
 		Other -> Other
 	end.
 
--spec stop_window(Feed :: binary(), Ref :: term()) -> ok | {error, Reason :: term()}.
-stop_window(Feed, Ref) when is_binary(Feed) ->
+-spec stop_window(Feed :: atom(), Ref :: term()) -> ok | {error, Reason :: term()}.
+stop_window(Feed, Ref) when is_atom(Feed) ->
 	eb_feed:unregister(Feed, ?HANDLER(Ref)).
 
 %% ====================================================================
@@ -75,7 +75,7 @@ stop_window(Feed, Ref) when is_binary(Feed) ->
 -record(state, {module, type, size, timer, data, queue}).
 
 %% init/1
-init([Ref, Module, Args, Type, WindowSize, UpdateInterval]) ->
+init([Module, Args, Type, WindowSize, UpdateInterval]) ->
 	case Module:init(Args) of
 		{ok, Data} ->
 			{ok, Timer} = timer:send_interval(UpdateInterval * 1000, {run_update}),
@@ -92,17 +92,6 @@ init([Ref, Module, Args, Type, WindowSize, UpdateInterval]) ->
 	end.
 
 %% handle_event/2
-%% ====================================================================
-%% @doc <a href="http://www.erlang.org/doc/man/gen_event.html#Module:handle_event-2">gen_event:handle_event/2</a>
--spec handle_event(Event :: term(), State :: term()) -> Result when
-	Result :: {ok, NewState}
-	| {ok, NewState, hibernate}
-	| {swap_handlers, Args1, NewState, Handler2, Args2}
-	| remove_handler,
-	NewState :: term(), Args1 :: term(), Args2 :: term(),
-	Handler2 :: Module2 | {Module2, Id :: term()},
-	Module2 :: atom().
-%% ====================================================================
 handle_event(Event, State=#state{module=Module, data=Data, queue=Queue}) ->
 	{Include, NewData} = try Module:filter(Event, Data)
 	catch Error:Reason -> 
@@ -133,13 +122,9 @@ handle_info(Info, State) ->
 	{ok, State}.
 
 %% terminate/2
-terminate(_Arg, #state{timer=Timer}) ->
+terminate(#state{timer=Timer}) ->
 	timer:cancel(Timer),
 	ok.
-
-%% code_change/3
-code_change(_OldVsn, State, _Extra) ->
-	{ok, State}.
 
 %% ====================================================================
 %% Internal functions

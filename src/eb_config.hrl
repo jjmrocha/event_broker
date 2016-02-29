@@ -14,5 +14,5 @@
 %% limitations under the License.
 %%
 
--define(FEED(Feed, Filters, Pid), {Feed, Filters, Pid}).
+-define(FEED(Feed, Filters), {Feed, Filters}).
 -define(ROUTE(Event, Feeds), {Event, Feeds}).
