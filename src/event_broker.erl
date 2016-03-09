@@ -41,8 +41,8 @@ publish(Name, Ref) when is_binary(Name) ->
 	Event = eb_event:new(Name, Ref),
 	publish(Event).
 
--spec publish(Name::binary(), Ref::term(), Info::list()) -> ok.
-publish(Name, Ref, Info) when is_binary(Name) andalso is_list(Info) ->
+-spec publish(Name::binary(), Ref::term(), Info::map()) -> ok.
+publish(Name, Ref, Info) when is_binary(Name) andalso is_map(Info) ->
 	Event = eb_event:new(Name, Ref, Info),
 	publish(Event).
 
