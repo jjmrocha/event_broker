@@ -26,6 +26,7 @@
 -export([get_name/1, get_date/1, get_ref/1, get_info/1]).
 -export([get_property/2]).
 
+-spec name(Namespace::atom() | binary(), Name::binary()) -> binary().
 name(Namespace, Name) when is_atom(Namespace) andalso is_binary(Name) ->
 	BinNamespace = atom_to_binary(Namespace, utf8),
 	name(BinNamespace, Name);
