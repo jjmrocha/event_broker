@@ -64,10 +64,7 @@ get_info(Event) when is_record(Event, event_record) ->
 
 -spec get_property(Key::term(), Event::#event_record{}) -> {ok, Value::term()} | error.
 get_property(Key, Event) when is_record(Event, event_record) ->
-	case maps:get(Key, Event#event_record.info, false) of
-		false -> error;
-		Value -> {ok, Value}
-	end.
+	maps:find(Key, Event#event_record.info).
 
 %% ====================================================================
 %% Internal functions
