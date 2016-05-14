@@ -18,7 +18,7 @@
 
 -include("event_broker.hrl").
 
--define(HANDLER(Module, Pid), {?MODULE, {Module, Pid}}).
+-define(HANDLER(Module, Ref), {?MODULE, {Module, Ref}}).
 
 -behaviour(eb_event_handler).
 
@@ -27,25 +27,32 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([register_filter/3, remove_filter/2]).
+-export([register_filter/3, register_filter/4, remove_filter/3]).
 
--spec register_filter(Feed :: atom(), Module :: atom(), Args :: list()) -> ok | {error, Reason :: term()}.
+-spec register_filter(Feed :: atom(), Module :: atom(), Args :: list()) -> {ok, Ref :: term()} | {error, Reason :: term()}.
 register_filter(Feed, Module, Args) when is_atom(Feed) andalso is_atom(Module) andalso is_list(Args) ->
-	Subscriber = self(),
-	eb_feed:register(Feed, ?HANDLER(Module, Subscriber), [Feed, Subscriber, Module, Args]).	
+	Ref = make_ref(),
+	register_filter(Feed, Module, Args, Ref).	
 
--spec remove_filter(Feed :: atom(), Module :: atom()) -> ok | {error, Reason :: term()}.
-remove_filter(Feed, Module) when is_atom(Feed) andalso is_atom(Module) ->
+-spec register_filter(Feed :: atom(), Module :: atom(), Args :: list(),  Ref :: term()) -> {ok, Ref :: term()} | {error, Reason :: term()}.
+register_filter(Feed, Module, Args, Ref) when is_atom(Feed) andalso is_atom(Module) andalso is_list(Args) ->
 	Subscriber = self(),
-	eb_feed:unregister(Feed, ?HANDLER(Module, Subscriber)).
+	case eb_feed:register(Feed, ?HANDLER(Module, Ref), [Feed, Subscriber, Module, Args, Ref]) of
+		ok -> {ok, Ref};
+		Other -> Other
+	end.
+
+-spec remove_filter(Feed :: atom(), Module :: atom(), Ref :: term()) -> ok | {error, Reason :: term()}.
+remove_filter(Feed, Module, Ref) when is_atom(Feed) andalso is_atom(Module) ->
+	eb_feed:unregister(Feed, ?HANDLER(Module, Ref)).
 
 %% ====================================================================
 %% Behavioural functions
 %% ====================================================================
--record(state, {feed, pid, monitor, module, data}).
+-record(state, {feed, pid, monitor, module, data, ref}).
 
 %% init/1
-init([Feed, Subscriber, Module, Args]) ->
+init([Feed, Subscriber, Module, Args, Ref]) ->
 	case Module:init(Args) of
 		{ok, Data} -> 
 			Ref = erlang:monitor(process, Subscriber),
@@ -53,7 +60,8 @@ init([Feed, Subscriber, Module, Args]) ->
 					pid=Subscriber,
 					monitor=Ref,
 					module=Module,
-					data=Data},
+					data=Data,
+					ref=Ref},
 			{ok, State};
 		{error, Reason} ->
 			{error, Reason}
@@ -73,15 +81,15 @@ handle_event(Event, State=#state{pid=Subscriber, module=Module, data=Data}) ->
 %% handle_call/2
 handle_call(Request, State) ->
 	error_logger:info_msg("~p(~p): Unexpected call message ~p\n", [?MODULE, self(), Request]),
-	{ok, State}.
+	{noreply, State}.
 
 %% handle_info/2
-handle_info({'DOWN', _, _, Subscriber, _}, State=#state{feed=Feed, pid=Subscriber, module=Module}) ->
-	eb_feed:unregister(Feed, ?HANDLER(Module, Subscriber)),
+handle_info({'DOWN', _, _, Subscriber, _}, State=#state{feed=Feed, pid=Subscriber, module=Module, ref=Ref}) ->
+	eb_feed:unregister(Feed, ?HANDLER(Module, Ref)),
 	{ok, State};
 handle_info(Info, State) ->
 	error_logger:info_msg("~p(~p): Unexpected message ~p\n", [?MODULE, self(), Info]),
-	{noreply, State}.
+	{ok, State}.
 
 %% terminate/2
 terminate(#state{monitor=Ref}) ->

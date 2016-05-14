@@ -25,15 +25,15 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([start_filter/2, stop_filter/1]).
+-export([start_filter/2, stop_filter/2]).
 
--spec start_filter(Feed :: atom(), Ref :: term()) -> ok | {error, Reason :: term()}.
-start_filter(Feed, Ref) when is_atom(Feed) ->
-	eb_filter:register_filter(Feed, ?MODULE, [Ref]).	
+-spec start_filter(Feed :: atom(), EventRef :: term()) -> {ok, Ref :: term()} | {error, Reason :: term()}.
+start_filter(Feed, EventRef) when is_atom(Feed) ->
+	eb_filter:register_filter(Feed, ?MODULE, [EventRef], EventRef).	
 
--spec stop_filter(Feed :: atom()) -> ok | {error, Reason :: term()}.
-stop_filter(Feed) when is_atom(Feed) ->
-	eb_filter:remove_filter(Feed, ?MODULE).
+-spec stop_filter(Feed :: atom(), EventRef :: term()) -> ok | {error, Reason :: term()}.
+stop_filter(Feed, EventRef) when is_atom(Feed) ->
+	eb_filter:remove_filter(Feed, ?MODULE, EventRef).
 
 %% ====================================================================
 %% Behavioural functions
