@@ -27,9 +27,12 @@
 %% ====================================================================
 -export([start_filter/2, stop_filter/2]).
 
--spec start_filter(Feed :: atom(), EventRef :: term()) -> {ok, Ref :: term()} | {error, Reason :: term()}.
+-spec start_filter(Feed :: atom(), EventRef :: term()) -> ok | {error, Reason :: term()}.
 start_filter(Feed, EventRef) when is_atom(Feed) ->
-	eb_filter:register_filter(Feed, ?MODULE, [EventRef], EventRef).	
+	case eb_filter:register_filter(Feed, ?MODULE, [EventRef], EventRef) of
+		{ok, _} -> ok;
+		Other -> Other
+	end.
 
 -spec stop_filter(Feed :: atom(), EventRef :: term()) -> ok | {error, Reason :: term()}.
 stop_filter(Feed, EventRef) when is_atom(Feed) ->
