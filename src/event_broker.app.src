@@ -27,7 +27,8 @@
 	{applications, [
 		kernel, 
 		stdlib,
-		worker_pool
+		worker_pool,
+		columbo
 	]},
 	{mod, {event_broker_app, []}},
 	{env, [
