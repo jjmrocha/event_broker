@@ -55,10 +55,10 @@ remove_filter(Feed, Module, Ref) when is_atom(Feed) andalso is_atom(Module) ->
 init([Feed, Subscriber, Module, Args, Ref]) ->
 	case Module:init(Args) of
 		{ok, Data} -> 
-			Ref = erlang:monitor(process, Subscriber),
+			Monitor = erlang:monitor(process, Subscriber),
 			State = #state{feed=Feed,
 					pid=Subscriber,
-					monitor=Ref,
+					monitor=Monitor,
 					module=Module,
 					data=Data,
 					ref=Ref},
@@ -92,8 +92,8 @@ handle_info(Info, State) ->
 	{ok, State}.
 
 %% terminate/2
-terminate(#state{monitor=Ref}) ->
-	erlang:demonitor(Ref),
+terminate(#state{monitor=Monitor}) ->
+	erlang:demonitor(Monitor),
 	ok.
 
 %% ====================================================================
