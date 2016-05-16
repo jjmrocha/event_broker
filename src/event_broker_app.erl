@@ -27,7 +27,9 @@ start(_Type, _StartArgs) ->
 	{ok, Pid} = event_broker_sup:start_link(),
 	eb_config:create(),
 	{ok, Feed} = application:get_env(feeds),
-	start_feeds(Feed),
+	start_feeds(Feed, false),
+	{ok, GlobalFeed} = application:get_env(global_feeds),
+	start_feeds(GlobalFeed, true),	
 	{ok, Pid}.
 
 stop(_State) ->
@@ -38,10 +40,10 @@ stop(_State) ->
 %% Internal functions
 %% ====================================================================
 
-start_feeds([]) -> ok;
-start_feeds([{Name, Filters}|T]) when is_atom(Name) andalso is_list(Filters) -> 
-	eb_feed_sup:create_feed(Name, Filters),
-	start_feeds(T);
-start_feeds([H|T]) ->
+start_feeds([], _Global) -> ok;
+start_feeds([{Name, Filters}|T], Global) when is_atom(Name) andalso is_list(Filters) -> 
+	eb_feed_sup:create_feed(Name, Global, Filters),
+	start_feeds(T, Global);
+start_feeds([H|T], Global) ->
 	error_logger:error_msg("Invalid feed configuration: ~p\n", [H]),
-	start_feeds(T).
+	start_feeds(T, Global).
