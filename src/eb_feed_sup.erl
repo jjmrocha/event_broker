@@ -27,20 +27,24 @@
 %% API functions
 %% ====================================================================
 -export([start_link/0]).
--export([create_feed/2, drop_feed/1, list_feeds/0]).
+-export([create_feed/2, create_feed/3, drop_feed/1, list_feeds/0]).
 
 -define(SERVER, {local, ?MODULE}).
 
 start_link() ->
 	supervisor:start_link(?SERVER, ?MODULE, []).
-
+	
 -spec create_feed(Name :: atom(), Filters :: list()) -> ok | {error, Reason :: term()}.
 create_feed(Name, Filters) when is_atom(Name) andalso is_list(Filters) ->
+	create_feed(Name, false, Filters).
+
+-spec create_feed(Name :: atom(), Global :: boolean(), Filters :: list()) -> ok | {error, Reason :: term()}.
+create_feed(Name, Global, Filters) when is_atom(Name) andalso is_boolean(Global) andalso is_list(Filters) ->
 	case eb_config:find_feed(Name) of
 		false ->
 			case compile_filters(Filters) of
 				{ok, REFilters} -> 
-					{ok, _} = supervisor:start_child(?MODULE, [Name]),
+					{ok, _} = supervisor:start_child(?MODULE, [Name, Global]),
 					ok = eb_feed:register(Name, eb_subscription, []),
 					eb_config:insert_feed(Name, REFilters),
 					event_broker:publish(?EB_FEED_CREATED, Name);
