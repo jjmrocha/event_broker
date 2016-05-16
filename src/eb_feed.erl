@@ -27,12 +27,12 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([start_link/1]).
+-export([start_link/2]).
 -export([register/3, unregister/2, list_handlers/1, is_registered/2]).
 -export([publish/2, call/3]).
 
-start_link(FeedName) ->
-	gen_server:start_link(?SERVER(FeedName), ?MODULE, [FeedName], []).
+start_link(FeedName, Global) ->
+	gen_server:start_link(?SERVER(FeedName), ?MODULE, [FeedName, Global], []).
 
 -spec register(Feed :: atom(), Handler, Args :: list()) -> ok | {error, Reason :: term()} 
 	when Handler :: Module | {Module, Ref},
@@ -79,13 +79,13 @@ call(Feed, Handler, Msg) when is_atom(Feed) ->
 %% ====================================================================
 %% Behavioural functions
 %% ====================================================================
--record(state, {feed, handlers}).
+-record(state, {feed, global, handlers}).
 
 %% init/1
-init([FeedName]) ->
+init([FeedName, Global]) ->
 	process_flag(trap_exit, true),
 	error_logger:info_msg("Feed ~p starting on [~p]...\n", [FeedName, self()]),
-	{ok, #state{feed=FeedName, handlers=dict:new()}}.
+	{ok, #state{feed=FeedName, global=Global, handlers=dict:new()}}.
 
 %% handle_call/3
 handle_call({get_handler_pid, Handler}, _From, State) ->
@@ -118,12 +118,14 @@ handle_call({list_handlers}, _From, State) ->
 
 %% handle_cast/2
 handle_cast({publish, Event}, State) ->
-	dict:fold(fun(_, Pid, _) ->
-				eb_handler:event(Pid, Event)
-		end, [], State#state.handlers),
+	notify(State#state.handlers, Event),
+	cluster(State#state.global, State#state.feed, Event),
 	{noreply, State}.
 
 %% handle_info/2
+handle_info({eb_cluster_event, Event}, State) ->
+	notify(State#state.handlers, Event),
+	{noreply, State};
 handle_info({update, Handler, Pid}, State) ->
 	Handlers = dict:store(Handler, Pid, State#state.handlers),
 	{noreply, State#state{handlers=Handlers}};
@@ -145,3 +147,12 @@ code_change(_OldVsn, State, _Extra) ->
 %% ====================================================================
 %% Internal functions
 %% ====================================================================
+
+notify(Handlers, Event) ->
+	dict:fold(fun(_, Pid, _) ->
+				eb_handler:event(Pid, Event)
+		end, [], Handlers).
+
+cluster(true, FeedName, Event) ->
+	columbo:send_to_all(FeedName, {eb_cluster_event, Event});
+cluster(_Global, _FeedName, _Event) -> ok.
