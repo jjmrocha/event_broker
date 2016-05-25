@@ -49,18 +49,18 @@ remove_filter(Feed, Module, Ref) when is_atom(Feed) andalso is_atom(Module) ->
 %% ====================================================================
 %% Behavioural functions
 %% ====================================================================
--record(state, {feed, pid, monitor, module, data, ref}).
+-record(state, {feed, pid, monitor, module, filter_state, ref}).
 
 %% init/1
 init([Feed, Subscriber, Module, Args, Ref]) ->
 	case Module:init(Args) of
-		{ok, Data} -> 
+		{ok, FilterState} -> 
 			Monitor = erlang:monitor(process, Subscriber),
 			State = #state{feed=Feed,
 					pid=Subscriber,
 					monitor=Monitor,
 					module=Module,
-					data=Data,
+					filter_state=FilterState,
 					ref=Ref},
 			{ok, State};
 		{error, Reason} ->
@@ -68,15 +68,15 @@ init([Feed, Subscriber, Module, Args, Ref]) ->
 	end.
 
 %% handle_event/2
-handle_event(Event, State=#state{pid=Subscriber, module=Module, data=Data}) ->
-	{Send, NewData} = try Module:filter(Event, Data)
+handle_event(Event, State=#state{pid=Subscriber, module=Module, filter_state=FilterState}) ->
+	{Send, NewFilterState} = try Module:filter(Event, FilterState)
 	catch Error:Reason -> 
 			LogArgs = [?MODULE, Module, Event, Error, Reason],
 			error_logger:error_msg("~p: Error while executing ~p:filter(~p, State) -> ~p:~p\n", LogArgs),
 			{false, Data}
 	end,
 	send(Send, Subscriber, Event),
-	{ok, State#state{data=NewData}}.
+	{ok, State#state{filter_state=NewFilterState}}.
 
 %% handle_call/2
 handle_call(Request, State) ->
