@@ -1,5 +1,5 @@
 %%
-%% Copyright 2015 Joaquim Rocha <jrocha@gmailbox.org>
+%% Copyright 2015-16 Joaquim Rocha <jrocha@gmailbox.org>
 %% 
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -30,17 +30,22 @@
 
 -spec subscribe(Feed :: atom()) -> ok | {error, Reason :: term()}.
 subscribe(Feed) when is_atom(Feed) ->
+	check_and_setup(Feed),
 	Subscriber = self(),
 	eb_feed:call(Feed, ?MODULE, {subscribe, Subscriber}).	
 
 -spec unsubscribe(Feed :: atom()) -> ok | {error, Reason :: term()}.
 unsubscribe(Feed) when is_atom(Feed) ->
-	Subscriber = self(),
-	eb_feed:call(Feed, ?MODULE, {unsubscribe, Subscriber}).
+	iff_registered(Feed, fun() ->
+			Subscriber = self(),
+			eb_feed:call(Feed, ?MODULE, {unsubscribe, Subscriber})
+		end, ok).
 
 -spec count(Feed :: atom()) -> {ok, Count :: integer()} | {error, Reason :: term()}.
 count(Feed) when is_atom(Feed) ->
-	eb_feed:call(Feed, ?MODULE, {count}).
+	iff_registered(Feed, fun() -> 
+			eb_feed:call(Feed, ?MODULE, {count}) 
+		end, {ok, 0}).
 
 %% ====================================================================
 %% Behavioural functions
@@ -101,4 +106,16 @@ terminate(Dict) ->
 %% Internal functions
 %% ====================================================================
 
+check_and_setup(Feed) ->
+	case is_registered(Feed) of
+		false -> eb_feed:register(Feed, ?MODULE, []);
+		true -> ok
+	end.
 
+iff_registered(Feed, Fun, Else) ->
+	case is_registered(Feed) of
+		true -> Fun();
+		false -> Else
+	end.
+
+is_registered(Feed) -> eb_feed:is_registered(Feed, ?MODULE).
