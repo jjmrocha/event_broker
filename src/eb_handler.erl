@@ -44,10 +44,10 @@ event(Pid, Event) ->
 init([Feed, Handler, Args]) ->
 	Module = module(Handler),
 	case Module:init(Args) of
-		{ok, State} ->
+		{ok, HandlerState} ->
 			error_logger:info_msg("Handler ~p (~p) starting on [~p] for feed ~p...\n", [Handler, Module, self(), Feed]),
 			Feed ! {update, Handler, self()},
-			{ok, #state{feed=Feed, module=Module, handler=Handler, handler_state=State}};
+			{ok, #state{feed=Feed, module=Module, handler=Handler, handler_state=HandlerState}};
 		{error, Reason} ->
 			{stop, Reason}
 	end.
@@ -56,7 +56,7 @@ init([Feed, Handler, Args]) ->
 handle_call({call, Msg}, _From, State=#state{module=Module, handler_state=HandlerState}) ->
 	case Module:handle_call(Msg, HandlerState) of
 		{ok, Reply, NewHandlerState} -> {reply, Reply, State#state{handler_state=NewHandlerState}};
-		{noreply, NewHandlerState} ->{noreply, State#state{handler_state=NewHandlerState}}
+		{noreply, NewHandlerState} -> {noreply, State#state{handler_state=NewHandlerState}}
 	end.
 
 %% handle_cast/2
