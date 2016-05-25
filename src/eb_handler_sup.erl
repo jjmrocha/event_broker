@@ -43,7 +43,7 @@ drop_handler(Pid) ->
 
 init([]) ->
 	error_logger:info_msg("~p [~p] Starting...\n", [?MODULE, self()]),
-	Handler = {eb_handler, {eb_handler, start_link, []}, permanent, 2000, worker, [eb_handler]},
+	Handler = {eb_handler, {eb_handler, start, []}, permanent, 2000, worker, [eb_handler]},
 	{ok,{{simple_one_for_one, 10, 60}, [Handler]}}.
 
 %% ====================================================================
