@@ -1,5 +1,5 @@
 %%
-%% Copyright 2015 Joaquim Rocha <jrocha@gmailbox.org>
+%% Copyright 2015-16 Joaquim Rocha <jrocha@gmailbox.org>
 %% 
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -19,22 +19,14 @@
 -include("event_broker.hrl").
 -include("eb_config.hrl").
 
--behaviour(gen_server).
-
--export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
-
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([start_link/0]).
 -export([publish/1, publish/2, publish/3]).
-
-start_link() ->
-	gen_server:start_link(?MODULE, [], []).
 
 -spec publish(Event :: #event_record{}) -> ok.
 publish(Event) when is_record(Event, event_record) ->
-	worker_pool:cast(?MODULE, {publish, Event}).
+	route(Event).
 
 -spec publish(Name::binary(), Ref::term()) -> ok.
 publish(Name, Ref) when is_binary(Name) ->
@@ -45,39 +37,6 @@ publish(Name, Ref) when is_binary(Name) ->
 publish(Name, Ref, Info) when is_binary(Name) andalso is_map(Info) ->
 	Event = eb_event:new(Name, Ref, Info),
 	publish(Event).
-
-%% ====================================================================
-%% Behavioural functions
-%% ====================================================================
-%% init/1
-init([]) ->
-	{ok, none}.
-
-%% handle_call/3
-handle_call(Request, _From, State) ->
-	error_logger:info_msg("~p(~p): Unexpected call message ~p\n", [?MODULE, self(), Request]),
-	{noreply, State}.
-
-%% handle_cast/2
-handle_cast({publish, Event}, State) ->
-	route(Event),
-	{noreply, State};
-handle_cast(Msg, State) ->
-	error_logger:info_msg("~p(~p): Unexpected cast message ~p\n", [?MODULE, self(), Msg]),
-	{noreply, State}.
-
-%% handle_info/2
-handle_info(Info, State) ->
-	error_logger:info_msg("~p(~p): Unexpected message ~p\n", [?MODULE, self(), Info]),
-	{noreply, State}.
-
-%% terminate/2
-terminate(_Reason, _State) ->
-	ok.
-
-%% code_change/3
-code_change(_OldVsn, State, _Extra) ->
-	{ok, State}.
 
 %% ====================================================================
 %% Internal functions
