@@ -83,7 +83,6 @@ call(Feed, Handler, Msg) when is_atom(Feed) ->
 
 %% init/1
 init([FeedName, Global]) ->
-	process_flag(trap_exit, true),
 	error_logger:info_msg("Feed ~p starting on [~p]...\n", [FeedName, self()]),
 	{ok, #state{feed=FeedName, global=Global, handlers=dict:new()}}.
 
