@@ -23,11 +23,11 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([start_link/3]).
+-export([start/3]).
 -export([call/2, event/2]).
 
-start_link(Feed, Handler, Args) ->
-	gen_server:start_link(?MODULE, [Feed, Handler, Args], []).
+start(Feed, Handler, Args) ->
+	gen_server:start(?MODULE, [Feed, Handler, Args], []).
 
 call(Pid, Msg) ->
 	gen_server:call(Pid, {call, Msg}).
