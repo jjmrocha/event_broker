@@ -73,7 +73,7 @@ handle_event(Event, State=#state{pid=Subscriber, module=Module, filter_state=Fil
 	catch Error:Reason -> 
 			LogArgs = [?MODULE, Module, Event, Error, Reason],
 			error_logger:error_msg("~p: Error while executing ~p:filter(~p, State) -> ~p:~p\n", LogArgs),
-			{false, Data}
+			{false, FilterState}
 	end,
 	send(Send, Subscriber, Event),
 	{ok, State#state{filter_state=NewFilterState}}.
