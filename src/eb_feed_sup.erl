@@ -82,7 +82,6 @@ init([]) ->
 %% Internal functions
 %% ====================================================================
 
-compile_filters([]) -> {error, empty_filter_list};
 compile_filters(Filters) -> compile_filters(Filters, []).
 
 compile_filters([], ReFilters) -> {ok, ReFilters};
