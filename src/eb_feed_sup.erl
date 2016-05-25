@@ -45,7 +45,6 @@ create_feed(Name, Global, Filters) when is_atom(Name) andalso is_boolean(Global)
 			case compile_filters(Filters) of
 				{ok, REFilters} -> 
 					{ok, _} = supervisor:start_child(?MODULE, [Name, Global]),
-					ok = eb_feed:register(Name, eb_subscription, []),
 					eb_config:insert_feed(Name, REFilters),
 					event_broker:publish(?EB_FEED_CREATED, Name);
 				{error, Reason} -> {error, {invalid_filter, Reason}}
