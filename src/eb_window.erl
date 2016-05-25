@@ -1,5 +1,5 @@
 %%
-%% Copyright 2015 Joaquim Rocha <jrocha@gmailbox.org>
+%% Copyright 2015-16 Joaquim Rocha <jrocha@gmailbox.org>
 %% 
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -72,19 +72,19 @@ stop_window(Feed, Ref) when is_atom(Feed) ->
 %% ====================================================================
 %% Behavioural functions
 %% ====================================================================
--record(state, {module, type, size, timer, data, queue}).
+-record(state, {module, type, size, timer, window_state, queue}).
 
 %% init/1
 init([Module, Args, Type, WindowSize, UpdateInterval]) ->
 	case Module:init(Args) of
-		{ok, Data} ->
+		{ok, WindowState} ->
 			{ok, Timer} = timer:send_interval(UpdateInterval * 1000, {run_update}),
 			State = #state{
 					module=Module,
 					type=Type,
 					size=WindowSize,
 					timer=Timer,
-					data=Data,
+					window_state=WindowState,
 					queue=queue:new()
 					},
 			{ok, State};
@@ -92,15 +92,15 @@ init([Module, Args, Type, WindowSize, UpdateInterval]) ->
 	end.
 
 %% handle_event/2
-handle_event(Event, State=#state{module=Module, data=Data, queue=Queue}) ->
-	{Include, NewData} = try Module:filter(Event, Data)
+handle_event(Event, State=#state{module=Module, window_state=WindowState, queue=Queue}) ->
+	{Include, NewWindowState} = try Module:filter(Event, WindowState)
 	catch Error:Reason -> 
 			LogArgs = [?MODULE, Module, Event, Error, Reason],
 			error_logger:error_msg("~p: Error while executing ~p:filter(~p, State) -> ~p:~p\n", LogArgs),
-			{false, Data}
+			{false, WindowState}
 	end,	
 	NewQueue = add_event(Include, Event, Queue),
-	{ok, State#state{data=NewData, queue=NewQueue}}.
+	{ok, State#state{window_state=NewWindowState, queue=NewQueue}}.
 
 %% handle_call/2
 handle_call(Request, State) ->
@@ -108,15 +108,15 @@ handle_call(Request, State) ->
 	{noreply, State}.
 
 %% handle_info/2
-handle_info({run_update}, State=#state{module=Module, type=Type, size=Size, data=Data, queue=Queue}) ->
+handle_info({run_update}, State=#state{module=Module, type=Type, size=Size, window_state=WindowState, queue=Queue}) ->
 	NewQueue = purge(Type, Size, Queue),
-	NewData = try Module:update(NewQueue, Data)
+	NewWindowState = try Module:update(NewQueue, WindowState)
 	catch Error:Reason -> 
 			LogArgs = [?MODULE, Module, Error, Reason],
 			error_logger:error_msg("~p: Error while executing ~p:update(Queue, State) -> ~p:~p\n", LogArgs),
-			Data
+			WindowState
 	end,
-	{ok, State#state{data=NewData, queue=NewQueue}};
+	{ok, State#state{window_state=NewWindowState, queue=NewQueue}};
 handle_info(Info, State) ->
 	error_logger:info_msg("~p(~p): Unexpected message ~p\n", [?MODULE, self(), Info]),
 	{ok, State}.
