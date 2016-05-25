@@ -25,11 +25,8 @@ start_link() ->
 	supervisor:start_link(?MODULE, []).
 
 init([]) ->
-	{ok, Multiplier} = application:get_env(processes_by_core),
-	WorkerCount = erlang:system_info(schedulers) * Multiplier,
-	BROKER = {event_broker, {worker_pool_sup, start_pool, [event_broker, WorkerCount, {event_broker, start_link, []}]}, permanent, 2000, supervisor, [worker_pool_sup]},
 	FEED_SUP = {eb_feed_sup, {eb_feed_sup, start_link, []}, permanent, 2000, supervisor, [eb_feed_sup]},
 	HANDLER_SUP = {eb_handler_sup, {eb_handler_sup, start_link, []}, permanent, 2000, supervisor, [eb_handler_sup]},
-	{ok, {{one_for_one, 5, 60}, [BROKER, FEED_SUP, HANDLER_SUP]}}.
+	{ok, {{one_for_one, 5, 60}, [FEED_SUP, HANDLER_SUP]}}.
 
 
